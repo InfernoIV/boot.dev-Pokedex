@@ -12,7 +12,7 @@ import (
 type cliCommand struct {
 	name        string
 	description string
-	callback    func(*config) error
+	callback    func(*config, []string) error
 }
 
 // Update all commands (e.g. help, exit, map) to now accept a pointer to a "config" struct as a parameter.
@@ -23,15 +23,23 @@ type config struct {
 	Previous string
 }
 
+// global variable due to multiple references
 var command_list map[string]cliCommand
 
 func init() {
+	//create the command list
 	command_list = map[string]cliCommand{
 		"help": {
 			name:        "help",
 			description: "Displays a help message",
 			callback:    Command_help,
 		},
+		"exit": {
+			name:        "exit",
+			description: "Exit the Pokedex",
+			callback:    Command_exit,
+		},
+
 		"map": {
 			name:        "map",
 			description: "Get the map",
@@ -42,10 +50,11 @@ func init() {
 			description: "Get the previous map",
 			callback:    Command_map_back,
 		},
-		"exit": {
-			name:        "exit",
-			description: "Exit the Pokedex",
-			callback:    Command_exit,
+
+		"explore": {
+			name:        "explore",
+			description: "Explore <area name>",
+			callback:    Command_explore,
 		},
 	}
 
@@ -71,7 +80,7 @@ func main() {
 		cli_command, ok := command_list[command]
 		//if command is in the list
 		if ok {
-			cli_command.callback(&configuration)
+			cli_command.callback(&configuration, cleaned_input[1:])
 		} else {
 			fmt.Println("Command not found!")
 		}
@@ -79,6 +88,7 @@ func main() {
 }
 
 func Clean_input(text string) []string {
+	//convert to lower text
 	lowercase_text := strings.ToLower(text)
 	//The purpose of this function will be to split the users input into "words" based on whitespace.
 	// It should also lowercase the input and trim any leading or trailing whitespace. For example:
@@ -87,13 +97,13 @@ func Clean_input(text string) []string {
 	return split_text
 }
 
-func Command_exit(configuration *config) error {
+func Command_exit(_ *config, _ []string) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func Command_help(configuration *config) error {
+func Command_help(_ *config, _ []string) error {
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Println("Usage:")
 	fmt.Println("")
@@ -103,7 +113,7 @@ func Command_help(configuration *config) error {
 	return nil
 }
 
-func Command_map(configuration *config) error {
+func Command_map(configuration *config, _ []string) error {
 	url := configuration.Next
 	//if we have no previous url
 	if configuration.Next == "" {
@@ -111,7 +121,7 @@ func Command_map(configuration *config) error {
 		if configuration.Current != "" {
 			//use the current url
 			url = configuration.Current
-		//no urls available
+			//no urls available
 		} else {
 			//throw error
 			fmt.Printf("No next URL available!\n")
@@ -122,7 +132,7 @@ func Command_map(configuration *config) error {
 	return print_map_data(configuration, url)
 }
 
-func Command_map_back(configuration *config) error {
+func Command_map_back(configuration *config, _ []string) error {
 	url := configuration.Previous
 	//if we have no previous url
 	if configuration.Previous == "" {
@@ -130,7 +140,7 @@ func Command_map_back(configuration *config) error {
 		if configuration.Current != "" {
 			//use the current url
 			url = configuration.Current
-		//no urls available
+			//no urls available
 		} else {
 			//throw error
 			fmt.Printf("No previous URL available!\n")
@@ -159,5 +169,25 @@ func print_map_data(configuration *config, url string) error {
 		fmt.Printf("%v\n", v.Name)
 	}
 	//return
+	return nil
+}
+
+func Command_explore(_ *config, arguments []string) error {
+	//get the location
+	location := arguments[0]
+
+	//get the data
+	data, err := pokeapi.Get_location_data(location)
+	//if error
+	if err != nil {
+		//return the error
+		return err
+	}
+	//for every result
+	for _, v := range data.PokemonEncounters {
+		//print
+		fmt.Printf("%v\n", v.Pokemon.Name)
+	}
+
 	return nil
 }
