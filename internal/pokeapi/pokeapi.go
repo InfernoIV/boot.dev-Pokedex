@@ -2,6 +2,7 @@ package pokeapi
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -164,7 +165,7 @@ func Catch_pokemon(pokemon string) error {
 		_, ok := pokedex[pokemon]
 		if ok {
 			//print message
-			fmt.Printf("Data of %v was already added to the pokedex!\n", pokemon)
+			//fmt.Printf("Data of %v was already added to the pokedex!\n", pokemon)
 		} else {
 			//print message
 			fmt.Printf("Data of %v has been added to the pokedex!\n", pokemon)
@@ -224,4 +225,27 @@ func Get_pokemon_data(name string) (pokemon_response, error) {
 
 	//return the data
 	return data, nil
+}
+
+func Inspect_pokemon(name string) error {
+	//check if already in pokedex
+	pokemon, ok := pokedex[name]
+	if ok {
+		fmt.Printf("Name: %v\n", pokemon.Name)
+		fmt.Printf("Height: %v\n", pokemon.Height)
+		fmt.Printf("Weight: %v\n", pokemon.Weight)
+		fmt.Printf("Stats:\n")
+		for _, v := range pokemon.Stats {
+			fmt.Printf("  -%v: %v\n", v.Stat.Name, v.BaseStat)
+		}
+		fmt.Printf("Types:\n")
+		for _, v := range pokemon.Types {
+			fmt.Printf("- %v\n", v.Type.Name)
+		}
+	} else {
+		//print message
+		fmt.Printf("you have not caught that pokemon\n")
+		return errors.New("pokemon not caught")
+	}
+	return nil
 }

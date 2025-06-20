@@ -63,8 +63,12 @@ func init() {
 			description: "Try to catch <pokemon name>",
 			callback:    Command_catch,
 		},
+		"inspect": {
+			name:        "inspect",
+			description: "Inspect catched <pokemon name>",
+			callback:    Command_inspect,
+		},
 	}
-
 }
 
 func main() {
@@ -200,10 +204,15 @@ func Command_explore(_ *config, arguments []string) error {
 }
 
 func Command_catch(_ *config, arguments []string) error {
-	//get the location
+	//get the pokemon name
 	pokemon := arguments[0]
 	//try to catch the pokemon
-	err := pokeapi.Catch_pokemon(pokemon)
-	//return the error
-	return err
+	return pokeapi.Catch_pokemon(pokemon)
+}
+
+func Command_inspect(_ *config, arguments []string) error {
+	//get the pokemon name
+	pokemon := arguments[0]
+	//try to catch the pokemon
+	return pokeapi.Inspect_pokemon(pokemon)
 }
