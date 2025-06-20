@@ -168,7 +168,8 @@ func Catch_pokemon(pokemon string) error {
 			//fmt.Printf("Data of %v was already added to the pokedex!\n", pokemon)
 		} else {
 			//print message
-			fmt.Printf("Data of %v has been added to the pokedex!\n", pokemon)
+			//fmt.Printf("Data of %v has been added to the pokedex!\n", pokemon)
+			fmt.Printf("You may now inspect it with the inspect command.")
 			//add to pokedex
 			pokedex[pokemon] = data
 		}
@@ -246,6 +247,15 @@ func Inspect_pokemon(name string) error {
 		//print message
 		fmt.Printf("you have not caught that pokemon\n")
 		return errors.New("pokemon not caught")
+	}
+	return nil
+}
+
+func Check_pokedex() error {
+	//for each entry
+	for _, v := range pokedex {
+		//print the name
+		fmt.Printf(" - %v\n", v.Name)
 	}
 	return nil
 }

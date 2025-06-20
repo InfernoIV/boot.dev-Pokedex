@@ -26,8 +26,6 @@ type config struct {
 // global variable due to multiple references
 var command_list map[string]cliCommand
 
-
-
 func init() {
 	//create the command list
 	command_list = map[string]cliCommand{
@@ -67,6 +65,11 @@ func init() {
 			name:        "inspect",
 			description: "Inspect catched <pokemon name>",
 			callback:    Command_inspect,
+		},
+		"pokedex": {
+			name:        "pokedex",
+			description: "List all pokemon in the pokedex",
+			callback:    Command_pokedex,
 		},
 	}
 }
@@ -215,4 +218,9 @@ func Command_inspect(_ *config, arguments []string) error {
 	pokemon := arguments[0]
 	//try to catch the pokemon
 	return pokeapi.Inspect_pokemon(pokemon)
+}
+
+func Command_pokedex(_ *config, _ []string) error {
+	//call the pokeapi check pokedex function
+	return pokeapi.Check_pokedex()
 }
