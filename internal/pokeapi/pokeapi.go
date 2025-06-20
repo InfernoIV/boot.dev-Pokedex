@@ -5,79 +5,13 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
 	"net/http"
 	"time"
 )
 
-// map data
-type map_data struct {
-	Name string `json:"name"`
-	Url  string `json:"url"`
-}
-
-// description of the JSON map data
-type map_response struct {
-	Count    int        `json:"count"`
-	Next     string     `json:"next"`
-	Previous string     `json:"previous"`
-	Results  []map_data `json:"results"`
-}
-
-// description of the JSON map data
-type location_response struct {
-	EncounterMethodRates []struct {
-		EncounterMethod struct {
-			Name string `json:"name"`
-			URL  string `json:"url"`
-		} `json:"encounter_method"`
-		VersionDetails []struct {
-			Rate    int `json:"rate"`
-			Version struct {
-				Name string `json:"name"`
-				URL  string `json:"url"`
-			} `json:"version"`
-		} `json:"version_details"`
-	} `json:"encounter_method_rates"`
-	GameIndex int `json:"game_index"`
-	ID        int `json:"id"`
-	Location  struct {
-		Name string `json:"name"`
-		URL  string `json:"url"`
-	} `json:"location"`
-	Name  string `json:"name"`
-	Names []struct {
-		Language struct {
-			Name string `json:"name"`
-			URL  string `json:"url"`
-		} `json:"language"`
-		Name string `json:"name"`
-	} `json:"names"`
-	PokemonEncounters []struct {
-		Pokemon struct {
-			Name string `json:"name"`
-			URL  string `json:"url"`
-		} `json:"pokemon"`
-		VersionDetails []struct {
-			EncounterDetails []struct {
-				Chance          int   `json:"chance"`
-				ConditionValues []any `json:"condition_values"`
-				MaxLevel        int   `json:"max_level"`
-				Method          struct {
-					Name string `json:"name"`
-					URL  string `json:"url"`
-				} `json:"method"`
-				MinLevel int `json:"min_level"`
-			} `json:"encounter_details"`
-			MaxChance int `json:"max_chance"`
-			Version   struct {
-				Name string `json:"name"`
-				URL  string `json:"url"`
-			} `json:"version"`
-		} `json:"version_details"`
-	} `json:"pokemon_encounters"`
-}
-
 var offline_cache = NewCache(60 * time.Second)
+var pokedex map[string]pokemon_response = make(map[string]pokemon_response)
 
 func Get_map_data(url string) (map_response, error) {
 	//dummy
@@ -155,10 +89,10 @@ func Unmarshal(data []byte, v interface{}) error {
 	return nil
 }
 
-func Get_location_data(location string) (response location_response, err error) {
+func Get_location_data(location string) (location_response, error) {
 	//create the url
 	url := "https://pokeapi.co/api/v2/location-area/" + location
-	
+
 	//dummy
 	var body []byte
 
@@ -188,7 +122,7 @@ func Get_location_data(location string) (response location_response, err error) 
 	//empty struct to fill
 	data := location_response{}
 	//unmarshal the data
-	err = Unmarshal(body, &data)
+	err := Unmarshal(body, &data)
 	//if there is an error
 	if err != nil {
 		//print
@@ -196,8 +130,98 @@ func Get_location_data(location string) (response location_response, err error) 
 		//stop
 		return data, err
 	}
-		
+
 	//return the data
 	return data, nil
-	
+
+}
+
+func Catch_pokemon(pokemon string) error {
+	//config
+	max_catch_chance := 200
+	//get the data
+	data, err := Get_pokemon_data(pokemon)
+	//if error
+	if err != nil {
+		//return the error
+		return err
+	}
+	//print starting throw
+	fmt.Printf("Throwing a Pokeball at %v...\n", pokemon)
+	//Give the user a chance to catch the Pokemon using the math/rand package.
+	chance := rand.Intn(max_catch_chance)
+	//debug
+	//fmt.Printf("Chance: %v, Base experience: %v\n", chance, data.BaseExperience)
+
+	//You can use the pokemon's "base experience" to determine the chance of catching it.
+	// The higher the base experience, the harder it should be to catch.
+	if chance > data.BaseExperience {
+		//pokemon is caught
+		//print message
+		fmt.Printf("%v was caught!\n", pokemon)
+
+		//check if already in pokedex
+		_, ok := pokedex[pokemon]
+		if ok {
+			//print message
+			fmt.Printf("Data of %v was already added to the pokedex!\n", pokemon)
+		} else {
+			//print message
+			fmt.Printf("Data of %v has been added to the pokedex!\n", pokemon)
+			//add to pokedex
+			pokedex[pokemon] = data
+		}
+
+	} else {
+		//print fail message
+		fmt.Printf("%v escaped!\n", pokemon)
+	}
+	return nil
+
+}
+
+func Get_pokemon_data(name string) (pokemon_response, error) {
+	//create url
+	url := "https://pokeapi.co/api/v2/pokemon/" + name
+
+	//dummy
+	var body []byte
+
+	//check offline cache
+	body_offline, ok := offline_cache.Get(url)
+	//if we have this in cache
+	if ok {
+		//fmt.Printf("Got data from cache: %v", url)
+		//use the cahce
+		body = body_offline
+	} else {
+		//get repsonse
+		body_online, err := Get_request(url)
+		//if error
+		if err != nil {
+			//print
+			fmt.Printf("get_request err: '%v'\n", err)
+			//stop
+			return pokemon_response{}, err
+		}
+		//add to cache
+		offline_cache.Add(url, body_online)
+		//set as data
+		body = body_online
+	}
+
+	//empty struct to fill
+	data := pokemon_response{}
+	//unmarshal the data
+	err := Unmarshal(body, &data)
+	//if there is an error
+	if err != nil {
+		//print
+		fmt.Printf("unmarshal err: '%v'\n", err)
+		//stop
+		return data, err
+	}
+
+	//return the data
+	return data, nil
 }
